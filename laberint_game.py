@@ -135,5 +135,5 @@ class LaberintGame:
 if __name__ == "__main__":
     game = LaberintGame(gui = True)
     game.start()    
-    for _ in range(20):
+    for _ in range(200):
        game.step(randint(0,3))
