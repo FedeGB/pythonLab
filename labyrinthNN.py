@@ -30,6 +30,7 @@ class LabyrinthNN:
         training_data = []
         for _ in range(self.initial_games):
             game = LaberintGame()
+            print("New game started")
             done, prev_score, board = game.start()
             self.init_exit_position(board)
             self.update_avatar_position(board)
@@ -41,15 +42,19 @@ class LabyrinthNN:
                 self.update_avatar_position(board)
                 if done:
                     if score < prev_score:
+                        print("died")
                         training_data.append([self.add_action_to_observation(prev_observation, game_action), -1])
                     else:
+                        print("win")
                         training_data.append([self.add_action_to_observation(prev_observation, game_action), 1])
                     break
                 else:
                     exit_distance = self.get_exit_distance()
                     if score > prev_score or exit_distance < prev_exit_distance:
+                        print("good direction")
                         training_data.append([self.add_action_to_observation(prev_observation, game_action), 1])
                     else:
+                        print("bad direction")
                         training_data.append([self.add_action_to_observation(prev_observation, game_action), 0])
                     prev_observation = self.generate_observation(board)
                     prev_exit_distance = exit_distance
@@ -163,6 +168,8 @@ class LabyrinthNN:
             game_memory = []
             game = LaberintGame()
             done, score, board = game.start()
+            self.init_exit_position(board)
+            self.update_avatar_position(board)
             prev_observation = self.generate_observation(board)
             for _ in range(self.goal_steps):
                 predictions = []
@@ -171,6 +178,7 @@ class LabyrinthNN:
                 action = np.argmax(np.array(predictions))
                 # game_action = self.get_game_action(snake, action - 1)
                 done, score, board  = game.step(action)
+                self.update_avatar_position(board)
                 game_memory.append([prev_observation, action])
                 if done:
                     print('-----')
@@ -192,6 +200,8 @@ class LabyrinthNN:
     def visualise_game(self, model):
         game = LaberintGame(gui = True)
         _, _, board = game.start()
+        self.init_exit_position(board)
+        self.update_avatar_position(board)
         prev_observation = self.generate_observation(board)
         for _ in range(self.goal_steps):
             precictions = []
@@ -200,6 +210,7 @@ class LabyrinthNN:
             action = np.argmax(np.array(precictions))
             # game_action = self.get_game_action(snake, action - 1)
             done, _, board  = game.step(action)
+            self.update_avatar_position(board)
             if done:
                 break
             else:
@@ -222,4 +233,4 @@ class LabyrinthNN:
         self.test_model(nn_model)
 
 if __name__ == "__main__":
-    LabyrinthNN(1000).train()
+    LabyrinthNN(1000, 100, 5000).train()
