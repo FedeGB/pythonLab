@@ -103,6 +103,7 @@ class LaberintGame:
         elif self.board[self.x][self.y] == 'w':
             self.x = oldx
             self.y = oldy
+            self.score = self.score - 2
         elif self.board[self.x][self.y] == 't':
             self.score = self.score -100
             self.done = True

@@ -30,17 +30,20 @@ class LabyrinthNN:
         training_data = []
         for _ in range(self.initial_games):
             game = LaberintGame()
-            _, done, prev_score, board = game.start()
-            init_exit_position(board)
-            update_avatar_position(board)
+            done, prev_score, board = game.start()
+            self.init_exit_position(board)
+            self.update_avatar_position(board)
             prev_observation = self.generate_observation(board)
             prev_exit_distance = self.get_exit_distance()
             for _ in range(self.goal_steps):
                 game_action = self.generate_action()
                 done, score, board  = game.step(game_action)
-                update_avatar_position(board)
+                self.update_avatar_position(board)
                 if done:
-                    training_data.append([self.add_action_to_observation(prev_observation, game_action), -1])
+                    if score < prev_score:
+                        training_data.append([self.add_action_to_observation(prev_observation, game_action), -1])
+                    else:
+                        training_data.append([self.add_action_to_observation(prev_observation, game_action), 1])
                     break
                 else:
                     exit_distance = self.get_exit_distance()
@@ -88,14 +91,14 @@ class LabyrinthNN:
     def add_action_to_observation(self, observation, action):
         return np.append([action], observation)
 
-    def get_snake_direction_vector(self, snake):
-        return np.array(snake[0]) - np.array(snake[1])
+    # def get_snake_direction_vector(self, snake):
+    #     return np.array(snake[0]) - np.array(snake[1])
 
     def get_exit_direction_vector(self):
         return np.array([self.exitX, self.exitY]) - np.array([self.avatarX, self.avatarY])
 
-    def normalize_vector(self, vector):
-        return vector / np.linalg.norm(vector)
+    # def normalize_vector(self, vector):
+    #     return vector / np.linalg.norm(vector)
 
     def get_exit_distance(self):
         return np.linalg.norm(self.get_exit_direction_vector())
@@ -122,20 +125,20 @@ class LabyrinthNN:
             return -1 # trap
         return 0
 
-    def is_direction_blocked(self, snake, direction):
-        point = np.array(snake[0]) + np.array(direction)
-        return point.tolist() in snake[:-1] or point[0] == 0 or point[1] == 0 or point[0] == 21 or point[1] == 21
+    # def is_direction_blocked(self, snake, direction):
+    #     point = np.array(snake[0]) + np.array(direction)
+    #     return point.tolist() in snake[:-1] or point[0] == 0 or point[1] == 0 or point[0] == 21 or point[1] == 21
 
-    def turn_vector_to_the_left(self, vector):
-        return np.array([-vector[1], vector[0]])
+    # def turn_vector_to_the_left(self, vector):
+    #     return np.array([-vector[1], vector[0]])
 
-    def turn_vector_to_the_right(self, vector):
-        return np.array([vector[1], -vector[0]])
+    # def turn_vector_to_the_right(self, vector):
+    #     return np.array([vector[1], -vector[0]])
 
-    def get_angle(self, a, b):
-        a = self.normalize_vector(a)
-        b = self.normalize_vector(b)
-        return math.atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]) / math.pi
+    # def get_angle(self, a, b):
+    #     a = self.normalize_vector(a)
+    #     b = self.normalize_vector(b)
+    #     return math.atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]) / math.pi
 
     def model(self):
         network = input_data(shape=[None, 5, 1], name='input')
@@ -159,26 +162,25 @@ class LabyrinthNN:
             steps = 0
             game_memory = []
             game = LaberintGame()
-            _, score, snake, food = game.start()
-            prev_observation = self.generate_observation(snake, food)
+            done, score, board = game.start()
+            prev_observation = self.generate_observation(board)
             for _ in range(self.goal_steps):
                 predictions = []
-                for action in range(-1, 2):
+                for action in range(0, 3):
                    predictions.append(model.predict(self.add_action_to_observation(prev_observation, action).reshape(-1, 5, 1)))
                 action = np.argmax(np.array(predictions))
-                game_action = self.get_game_action(snake, action - 1)
-                done, score, snake, food  = game.step(game_action)
+                # game_action = self.get_game_action(snake, action - 1)
+                done, score, board  = game.step(action)
                 game_memory.append([prev_observation, action])
                 if done:
                     print('-----')
                     print(steps)
-                    print(snake)
-                    print(food)
+                    print(board)
                     print(prev_observation)
                     print(predictions)
                     break
                 else:
-                    prev_observation = self.generate_observation(snake, food)
+                    prev_observation = self.generate_observation(board)
                     steps += 1
             steps_arr.append(steps)
             scores_arr.append(score)
@@ -189,19 +191,19 @@ class LabyrinthNN:
 
     def visualise_game(self, model):
         game = LaberintGame(gui = True)
-        _, _, snake, food = game.start()
-        prev_observation = self.generate_observation(snake, food)
+        _, _, board = game.start()
+        prev_observation = self.generate_observation(board)
         for _ in range(self.goal_steps):
             precictions = []
-            for action in range(-1, 2):
+            for action in range(0, 3):
                precictions.append(model.predict(self.add_action_to_observation(prev_observation, action).reshape(-1, 5, 1)))
             action = np.argmax(np.array(precictions))
-            game_action = self.get_game_action(snake, action - 1)
-            done, _, snake, food  = game.step(game_action)
+            # game_action = self.get_game_action(snake, action - 1)
+            done, _, board  = game.step(action)
             if done:
                 break
             else:
-                prev_observation = self.generate_observation(snake, food)
+                prev_observation = self.generate_observation(board)
 
     def train(self):
         training_data = self.initial_population()
@@ -220,4 +222,4 @@ class LabyrinthNN:
         self.test_model(nn_model)
 
 if __name__ == "__main__":
-    LabyrinthNN().train()
+    LabyrinthNN(1000).train()
