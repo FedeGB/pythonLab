@@ -108,6 +108,7 @@ class LaberintGame:
             self.score = self.score -100
             self.done = True
         elif self.board[self.x][self.y] == 'x':
+            print("Termino de verdad!")
             self.score = self.score + 100
             self.done = True            
 

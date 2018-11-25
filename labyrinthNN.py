@@ -19,6 +19,7 @@ class LabyrinthNN:
         self.avatarY = 0
         self.exitX = 0
         self.exitY = 0
+        self.positionDic = {}
         # self.vectors_and_keys = [
         #         [[-1, 0], 0],
         #         [[0, 1], 1],
@@ -30,6 +31,7 @@ class LabyrinthNN:
         training_data = []
         for _ in range(self.initial_games):
             game = LaberintGame()
+            self.positionDic.clear()
             print("New game started")
             done, prev_score, board = game.start()
             self.init_exit_position(board)
@@ -40,6 +42,8 @@ class LabyrinthNN:
                 game_action = self.generate_action()
                 done, score, board  = game.step(game_action)
                 self.update_avatar_position(board)
+                print(str(self.avatarX) + "," + str(self.avatarY))
+                print(str(self.exitX) + "," + str(self.exitY))
                 if done:
                     if score < prev_score:
                         print("died")
@@ -62,6 +66,19 @@ class LabyrinthNN:
 
     def generate_action(self):
         action = randint(0,3)
+        if str(self.avatarX) + "," + str(self.avatarY) in self.positionDic:
+            actions = self.positionDic[str(self.avatarX) + "," + str(self.avatarY)]
+            # print("action used on pos" + str(self.avatarX) + "," + str(self.avatarY)  + ":" + str(len(actions)))
+            if len(actions) == 4:
+                return action
+            while action in actions:
+                action = randint(0,3)
+            actions.append(action)
+            self.positionDic[str(self.avatarX) + "," + str(self.avatarY)] = actions
+        else:
+            actions = []
+            actions.append(action)
+            self.positionDic[str(self.avatarX) + "," + str(self.avatarY)] = actions
         return action
 
     def update_avatar_position(self, board):
@@ -109,6 +126,14 @@ class LabyrinthNN:
         return np.linalg.norm(self.get_exit_direction_vector())
 
     def is_obstacle_on_direction(self, board, position):
+        value = self.get_value_on_direction(board, position)
+        if(value == '#'):
+            return 1 # wall 
+        elif(value == 't'):
+            return -1 # trap
+        return 0
+
+    def get_value_on_direction(self, board, position):
         localx = self.avatarX
         localy = self.avatarY
         if position == 0:
@@ -123,13 +148,7 @@ class LabyrinthNN:
         elif position == 3:
             localx = self.avatarX-1
             # UP
-
-        if(board[localx][localy] == '#'):
-            return 1 # wall 
-        elif(board[localx][localy] == 't'):
-            return -1 # trap
-        return 0
-
+        return board[localx][localy]
     # def is_direction_blocked(self, snake, direction):
     #     point = np.array(snake[0]) + np.array(direction)
     #     return point.tolist() in snake[:-1] or point[0] == 0 or point[1] == 0 or point[0] == 21 or point[1] == 21
@@ -233,4 +252,4 @@ class LabyrinthNN:
         self.test_model(nn_model)
 
 if __name__ == "__main__":
-    LabyrinthNN(1000, 100, 5000).train()
+    LabyrinthNN(5000, 100, 10000).train()
