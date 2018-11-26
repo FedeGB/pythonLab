@@ -3,10 +3,11 @@
 #author: Juan Manuel Rodríguez
 import curses
 from random import randint
+import manual
 
 class LaberintGame:
 
-    levelName = 'levels/labyrinth_lvl0.txt';
+    levelName = 'levels/labyrinth_lvl4.txt';
 
     def __init__(self, board_width = 16, board_height = 6, gui = False):              
         self.score = 0
@@ -57,7 +58,7 @@ class LaberintGame:
         self.win.clear()
         self.win.border(0)
         #self.win.addstr(0, 2, 'Score : ' + str(self.score) + ' ')
-        self.win.addstr(0, 2, 'Action: '+ self.lastAction + ' ')
+        self.win.addstr(0, 2, 'Action: '+ self.lastAction + ' ' + str(self.score))
         print(self.board);
         for i in range(len(self.board)):
             for j in range(len(self.board[i])):
@@ -96,6 +97,9 @@ class LaberintGame:
             self.y = localy
             self.score = self.score - 2
         
+        if localx == 0 or localy == 0 or localx >= self.board_width["width"] or localy >= self.board_width["height"]:
+            self.score = self.score - 30
+
         #print("x:"+str(self.x)+" y:"+str(self.y))
         if self.board[self.x][self.y] == '.':
             self.board[oldx][oldy] = '.'
@@ -103,12 +107,11 @@ class LaberintGame:
         elif self.board[self.x][self.y] == 'w':
             self.x = oldx
             self.y = oldy
-            self.score = self.score - 2
+            self.score = self.score - 30
         elif self.board[self.x][self.y] == 't':
             self.score = self.score -100
             self.done = True
         elif self.board[self.x][self.y] == 'x':
-            print("Termino de verdad!")
             self.score = self.score + 100
             self.done = True            
 
@@ -137,5 +140,5 @@ class LaberintGame:
 if __name__ == "__main__":
     game = LaberintGame(gui = True)
     game.start()    
-    for _ in range(200):
-       game.step(randint(0,3))
+    for _ in range(2000):
+       game.step(manual.get())
