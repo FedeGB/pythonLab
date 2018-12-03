@@ -115,16 +115,10 @@ class LabyrinthNN:
                     return        
 
     def generate_observation(self, board, score):
-        # snake_direction = self.get_snake_direction_vector(snake)
-        # food_direction = self.get_food_direction_vector(snake, food)
         obstacle_left = self.is_obstacle_on_direction(board, 0)
         obstacle_down = self.is_obstacle_on_direction(board, 1)
         obstacle_right = self.is_obstacle_on_direction(board, 2)
         obstacle_up = self.is_obstacle_on_direction(board, 3)
-        # barrier_left = self.is_direction_blocked(snake, self.turn_vector_to_the_left(snake_direction))
-        # barrier_front = self.is_direction_blocked(snake, snake_direction)
-        # barrier_right = self.is_direction_blocked(snake, self.turn_vector_to_the_right(snake_direction))
-        # angle = self.get_angle(snake_direction, food_direction)
         board_width = len(board) - 1
         board_height = len(board[0]) - 1
         distance_value = (self.maxBoardDistance - self.get_exit_distance()) / self.maxBoardDistance
@@ -133,9 +127,6 @@ class LabyrinthNN:
 
     def add_action_to_observation(self, observation, action):
         return np.append([action], observation)
-
-    # def get_snake_direction_vector(self, snake):
-    #     return np.array(snake[0]) - np.array(snake[1])
 
     def get_exit_direction_vector(self):
         return np.array([self.exitX, self.exitY]) - np.array([self.avatarX, self.avatarY])
@@ -186,6 +177,7 @@ class LabyrinthNN:
 
     def get_predicted_action(self, model, prev_observation, prev_action):
         predictions = []
+        posStr = self.get_position_string(self.avatarX, self.avatarY)
         if prev_action < 0:
             for action in range(0, 4):
                 prediction = model.predict(self.add_action_to_observation(prev_observation, action).reshape(-1, 8, 1))
@@ -193,7 +185,7 @@ class LabyrinthNN:
             action = np.argmax(np.array(predictions))
         else:
             prediction = model.predict(self.add_action_to_observation(prev_observation, prev_action).reshape(-1, 8, 1))
-            if prediction[0][0] <= 0:
+            if prediction[0][0] <= 0 or posStr in self.positionDic:
                 actionPrev = (prev_action - 1) % 4
                 actionPost = (prev_action + 1) % 4
                 prediction = model.predict(self.add_action_to_observation(prev_observation, actionPrev).reshape(-1, 8, 1))
@@ -240,10 +232,8 @@ class LabyrinthNN:
             self.positionDic.clear()
             prev_observation = self.generate_observation(board, score)
             prev_action = -1
-            # print("new game")
             for _ in range(self.goal_steps_train):
                 action = self.get_predicted_action(model, prev_observation, prev_action)
-                # game_action = self.get_game_action(snake, action - 1)
                 self.positionDic[self.get_position_string(self.avatarX, self.avatarY)] = 1
                 done, score, board  = game.step(action)
                 self.update_avatar_position(board)
@@ -251,7 +241,7 @@ class LabyrinthNN:
                 if done:
                     print('-----')
                     print(steps)
-                    print(board)
+                    # print(board)
                     print(prev_observation)
                     # print(predictions)
                     break
@@ -259,7 +249,6 @@ class LabyrinthNN:
                     prev_observation = self.generate_observation(board, score)
                     prev_action = action
                     steps += 1
-            # print("End")
             steps_arr.append(steps)
             scores_arr.append(score)
         print('Average steps:',mean(steps_arr))
@@ -303,4 +292,4 @@ class LabyrinthNN:
         self.test_model(nn_model)
 
 if __name__ == "__main__":
-    LabyrinthNN(200000, 100, 50000).visualise()
+    LabyrinthNN(10000, 100, 1000).visualise()
